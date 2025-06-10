@@ -34,16 +34,16 @@ def index():
             co = float(request.form['CO'])
             o3 = float(request.form['O3'])
             no2 = float(request.form['NO2'])
-            pm25 = float(request.form['PM25'])
+            pm10 = float(request.form['PM10'])  # Ganti dari pm25
 
             # Validasi input tidak boleh negatif
-            if any(val < 0 for val in [co, o3, no2, pm25]):
+            if any(val < 0 for val in [co, o3, no2, pm10]):
                 raise ValueError("Nilai tidak boleh negatif.")
 
-            features = ['CO AQI Value', 'Ozone AQI Value', 'NO2 AQI Value', 'PM2.5 AQI Value']
-            input_df = pd.DataFrame([[co, o3, no2, pm25]], columns=features)
+            features = ['CO', 'O3', 'NO2', 'PM10']
+            input_df = pd.DataFrame([[co, o3, no2, pm10]], columns=features)
 
-            # Prediksi AQI
+            # Prediksi AQI (dianggap proxy-nya adalah PM2.5)
             pred_aqi = model.predict(input_df)[0]
             category, message = classify_aqi(pred_aqi)
 
@@ -52,7 +52,7 @@ def index():
                                    category=category,
                                    message=message,
                                    input_values={
-                                       'CO': co, 'O3': o3, 'NO2': no2, 'PM2.5': pm25
+                                       'CO': co, 'O3': o3, 'NO2': no2, 'PM10': pm10
                                    })
         except Exception as e:
             return f"Terjadi kesalahan: {e}"
