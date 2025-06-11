@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Prediksi Kualitas Udara (AQI)</title>
+    <title>Prediksi Kualitas Udara (AQI - PM2.5)</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -10,12 +10,10 @@
             font-family: Arial, sans-serif;
             margin: 20px;
         }
-
         .container {
             max-width: 600px;
             margin: auto;
         }
-
         input, button {
             display: block;
             width: 100%;
@@ -23,13 +21,11 @@
             padding: 10px;
             font-size: 1em;
         }
-
         .result {
             padding: 15px;
             border-radius: 5px;
             margin-top: 20px;
         }
-
         .result.baik { background-color: #d4edda; border-left: 6px solid #28a745; }
         .result.sedang { background-color: #fff3cd; border-left: 6px solid #ffc107; }
         .result.tidak_sehat_untuk_kelompok_sensitif { background-color: #fbe9c5; border-left: 6px solid #ff9800; }
@@ -37,18 +33,15 @@
         .result.sangat_tidak_sehat { background-color: #e2d3f8; border-left: 6px solid #6f42c1; }
         .result.berbahaya { background-color: #f3c2c2; border-left: 6px solid #b20000; }
         .result.ekstrem_berbahaya { background-color: #000000; color: #fff; border-left: 6px solid red; }
-
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 25px;
         }
-
         th, td {
             padding: 8px;
             border: 1px solid #ccc;
         }
-
         canvas {
             margin-top: 20px;
         }
@@ -56,43 +49,47 @@
 </head>
 <body>
     <div class="container">
-        <h1>Prediksi Kualitas Udara (AQI)</h1>
+        <h1>Prediksi Kualitas Udara (AQI - PM2.5)</h1>
         <form method="POST">
-            <label>Carbon Monoxide (CO AQI Value):</label>
-            <input type="number" step="0.01" name="CO" required min="0">
+            <label for="CO">Karbon Monoksida (CO):</label>
+            <input type="number" step="0.01" name="CO" required value="{{ input_values['CO'] if input_values else '' }}">
 
-            <label>Ozone (O3 AQI Value):</label>
-            <input type="number" step="0.01" name="O3" required min="0">
+            <label for="O3">Ozon (O3):</label>
+            <input type="number" step="0.01" name="O3" required value="{{ input_values['O3'] if input_values else '' }}">
 
-            <label>Nitrogen Dioxide (NO2 AQI Value):</label>
-            <input type="number" step="0.01" name="NO2" required min="0">
+            <label for="NO2">Nitrogen Dioksida (NO2):</label>
+            <input type="number" step="0.01" name="NO2" required value="{{ input_values['NO2'] if input_values else '' }}">
 
-            <label>Particulate Matter ≤ 2.5 µm (PM2.5 AQI Value):</label>
-            <input type="number" step="0.01" name="PM25" required min="0">
+            <label for="PM10">Partikulat Kasar (PM10):</label>
+            <input type="number" step="0.01" name="PM10" required value="{{ input_values['PM10'] if input_values else '' }}">
+
+            <label for="SO2">Sulfur Dioksida (SO2):</label>
+            <input type="number" step="0.01" name="SO2" required value="{{ input_values['SO2'] if input_values else '' }}">
 
             <button type="submit">Prediksi AQI</button>
         </form>
 
         {% if prediction %}
         <div class="result {{ category.lower().replace(' ', '_') }}">
-            <h2>Hasil Prediksi AQI: {{ prediction }}</h2>
+            <h2>Hasil Prediksi AQI (PM2.5): {{ prediction }}</h2>
             <h3>Kategori: {{ category }}</h3>
             <p>{{ message }}</p>
             <hr>
-            <h4>Konsentrasi polutan:</h4>
+            <h4>Konsentrasi Polutan:</h4>
             <ul>
-                <li>Carbon Monoxide (CO): {{ input_values.CO }}</li>
-                <li>Ozone (O3): {{ input_values.O3 }}</li>
-                <li>Nitrogen Dioxide (NO2): {{ input_values.NO2 }}</li>
-                <li>Particulate Matter ≤ 2.5 µm (PM2.5): {{ input_values['PM2.5'] }}</li>
+                <li>Karbon Monoksida (CO): {{ input_values.CO }}</li>
+                <li>Ozon (O3): {{ input_values.O3 }}</li>
+                <li>Nitrogen Dioksida (NO2): {{ input_values.NO2 }}</li>
+                <li>Partikulat Kasar (PM10): {{ input_values.PM10 }}</li>
+                <li>Sulfur Dioksida (SO2): {{ input_values.SO2 }}</li>
             </ul>
 
-            <!-- Simpan nilai-nilai dalam data attributes -->
             <div id="pollutant-data"
-                 data-co="{{ input_values.CO }}"
-                 data-o3="{{ input_values.O3 }}"
-                 data-no2="{{ input_values.NO2 }}"
-                 data-pm25="{{ input_values['PM2.5'] }}">
+                data-co="{{ input_values.CO }}"
+                data-o3="{{ input_values.O3 }}"
+                data-no2="{{ input_values.NO2 }}"
+                data-pm10="{{ input_values.PM10 }}"
+                data-so2="{{ input_values.SO2 }}">
             </div>
 
             <canvas id="pollutantChart"></canvas>
@@ -101,17 +98,18 @@
                 const co = parseFloat(dataDiv.dataset.co);
                 const o3 = parseFloat(dataDiv.dataset.o3);
                 const no2 = parseFloat(dataDiv.dataset.no2);
-                const pm25 = parseFloat(dataDiv.dataset.pm25);
+                const pm10 = parseFloat(dataDiv.dataset.pm10);
+                const so2 = parseFloat(dataDiv.dataset.so2);
 
                 const ctx = document.getElementById('pollutantChart').getContext('2d');
                 new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: ['CO', 'O3', 'NO2', 'PM2.5'],
+                        labels: ['CO', 'O3', 'NO2', 'PM10', 'SO2'],
                         datasets: [{
                             label: 'Nilai AQI',
-                            data: [co, o3, no2, pm25],
-                            backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545']
+                            data: [co, o3, no2, pm10, so2],
+                            backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d']
                         }]
                     },
                     options: {
